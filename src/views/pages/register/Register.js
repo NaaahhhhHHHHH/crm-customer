@@ -16,15 +16,18 @@ import CIcon from '@coreui/icons-react'
 import { toast } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
+import { updateData, createData, deleteData, getData } from '../../../api'
 import { cilLockLocked, cilUser, cilPhone, cilMedicalCross } from '@coreui/icons'
 
 const Register = () => {
   const navigate = useNavigate()
   // State for form inputs
   const [username, setUsername] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
+  const [mobile, setMobile] = useState('')
+  const [work, setWork] = useState('')
   const [repeatPassword, setRepeatPassword] = useState('')
   const [ssn, setSsn] = useState('')
 
@@ -34,30 +37,22 @@ const Register = () => {
     //setErrorMessage(null) // Clear previous errors
     try {
       if (password != repeatPassword) {
-        toast.error('Re-enter password is incorrect')
+        toast.error('Repeat password is incorrect')
+        return
       }
 
       // Call the register API function from api.js
       let requestData = {
         username: username,
+        name: name,
         email: email,
         password: password,
-        phone: phone,
-        ssn: ssn,
+        mobile: mobile,
+        work: work
       }
-      const data = await register(requestData, '/api/customer').then((res) => {
-        // localStorage.setItem('CRM-id', res.user.id)
-        // localStorage.setItem('CRM-name', res.user.name)
-        // localStorage.setItem('CRM-email', res.user.email)
-        // localStorage.setItem('CRM-username', res.user.username)
-        // localStorage.setItem('CRM-role', res.user.role)
-        // localStorage.setItem('CRM-verification', res.user.verification)
-        // localStorage.setItem('CRM-token', res.token)
-        // if (!res.user.verification) {
-        //   navigate('/verification')
-        // }
+      const data = await createData('customer', requestData).then((res) => {
         toast.success('Registration successful, please verify your email')
-        navigate('/')
+        navigate('/login')
       })
     } catch (error) {
       // Handle error (e.g., wrong credentials or server error)
@@ -106,8 +101,22 @@ const Register = () => {
                     <CFormInput
                       type="text"
                       required
-                      placeholder="PhoneNumber"
-                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Phone Number"
+                      onChange={(e) => setMobile(e.target.value)}
+                      pattern="^(\\(?[2-9]{1}[0-9]{2}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4})$"
+                      title="Three letter country code"
+                      autoComplete="phonenumber"
+                    />
+                  </CInputGroup>
+                  <CInputGroup className="mb-3">
+                    <CInputGroupText>
+                      <CIcon icon={cilPhone} />
+                    </CInputGroupText>
+                    <CFormInput
+                      type="text"
+                      required
+                      placeholder="Work Phone Number"
+                      onChange={(e) => setMobile(e.target.value)}
                       pattern="^(\\(?[2-9]{1}[0-9]{2}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4})$"
                       title="Three letter country code"
                       autoComplete="phonenumber"
@@ -123,7 +132,7 @@ const Register = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Password"
                       autoComplete="new-password"
-                      minLength={9}
+                      minLength={8}
                     />
                   </CInputGroup>
                   <CInputGroup className="mb-4">

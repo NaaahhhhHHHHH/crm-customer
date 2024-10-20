@@ -97,14 +97,14 @@ const Login = () => {
                           Login
                         </CButton>
                       </CCol>
-                      {/* <CCol xs={7}>
+                      <CCol xs={7}>
                         <Link to="/register">
                           <CButton color="primary" className="px-4" tabIndex={-1}>
-                            Register as customer
+                            Register
                           </CButton>
                         </Link>
                       </CCol>
-                      <CCol xs={5} className="text-right">
+                      {/* <CCol xs={5} className="text-right">
                         <CButton color="link" className="px-0">
                           Forgot password?
                         </CButton>
