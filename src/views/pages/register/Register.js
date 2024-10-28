@@ -17,7 +17,7 @@ import { toast } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { updateData, createData, deleteData, getData } from '../../../api'
-import { cilLockLocked, cilUser, cilPhone, cilMedicalCross } from '@coreui/icons'
+import { cilLockLocked, cilUser, cilPhone, cilMedicalCross, cilMobile } from '@coreui/icons'
 
 const Register = () => {
   const navigate = useNavigate()
@@ -31,6 +31,17 @@ const Register = () => {
   const [repeatPassword, setRepeatPassword] = useState('')
   const [ssn, setSsn] = useState('')
 
+  const validatePhoneNumber = (phone) => {
+    // Regex pattern for phone number
+    const phoneRegex = /^(\+1\s?)?(\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/;
+    
+    return phoneRegex.test(phone);
+  }
+
+  const handleError = (error) => {
+    toast.error((error.response && error.response.data ? error.response.data.message: '') || error.message|| error.message)
+  }
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -38,6 +49,16 @@ const Register = () => {
     try {
       if (password != repeatPassword) {
         toast.error('Repeat password is incorrect')
+        return
+      }
+
+      if (!validatePhoneNumber(mobile)) {
+        toast.error('Mobile phone is invalid')
+        return
+      }
+
+      if (work && !validatePhoneNumber(work)) {
+        toast.error('Work phone is invalid')
         return
       }
 
@@ -58,7 +79,7 @@ const Register = () => {
       // Handle error (e.g., wrong credentials or server error)
       // setErrorMessage(error.message)
       // navigate('/500')
-      toast.error(error.message)
+      handleError(error)
     }
   }
   return (
@@ -96,15 +117,15 @@ const Register = () => {
                   </CInputGroup>
                   <CInputGroup className="mb-3">
                     <CInputGroupText>
-                      <CIcon icon={cilPhone} />
+                      <CIcon icon={cilMobile} />
                     </CInputGroupText>
                     <CFormInput
-                      type="text"
+                      type="tel"
                       required
-                      placeholder="Phone Number"
+                      placeholder="Mobile Phone Number"
                       onChange={(e) => setMobile(e.target.value)}
-                      pattern="^(\\(?[2-9]{1}[0-9]{2}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4})$"
-                      title="Three letter country code"
+                      pattern="^(\+?\d{1,3}?[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$"
+                      title="Please enter a valid phone number (e.g., 123-456-7890 or +91 (123) 456-7890)"
                       autoComplete="phonenumber"
                     />
                   </CInputGroup>
@@ -113,12 +134,11 @@ const Register = () => {
                       <CIcon icon={cilPhone} />
                     </CInputGroupText>
                     <CFormInput
-                      type="text"
-                      required
+                      type="tel"
                       placeholder="Work Phone Number"
-                      onChange={(e) => setMobile(e.target.value)}
-                      pattern="^(\\(?[2-9]{1}[0-9]{2}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4})$"
-                      title="Three letter country code"
+                      onChange={(e) => setWork(e.target.value)}
+                      pattern="^(\+?\d{1,3}?[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$"
+                      title="Please enter a valid phone number (e.g., 123-456-7890 or +91 (123) 456-7890)"
                       autoComplete="phonenumber"
                     />
                   </CInputGroup>

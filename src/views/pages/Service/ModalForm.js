@@ -13,12 +13,16 @@ import {
   Upload,
 } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
+import axios from 'axios'
+const apiUrl =
+  import.meta.env.MODE == 'product' ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_LOCAL
+const BASE_URL = `${apiUrl}/api`
 
 const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) => {
   const [form] = Form.useForm()
   const [fields, setFields] = useState([])
   const [fileList, setFileList] = useState([])
-  const [uploading, setUploading] = useState(false)
+
   useEffect(() => {
     if (formDataArray) {
       // Set the fields from formDataArray to the form
@@ -29,6 +33,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
         rules: item.required ? [{ required: true, message: `${item.fieldname} is required` }] : [],
         type: item.type,
         options: item.option || [],
+        value: item.value,
       }))
       setFields(initialFields)
       form.resetFields() // Clear the form on modal open
@@ -56,12 +61,60 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
     maxWidth: '95%',
   }
 
-  const handleFileChange = (info) => {
-    // You can customize how the file is handled here
-    if (info.file.status === 'done') {
-      message.success(`${info.file.name} file uploaded successfully`)
-    } else if (info.file.status === 'error') {
-      message.error(`${info.file.name} file upload failed`)
+  const handleFileChange = async (index, { file, fileList: newFileList }) => {
+    try {
+      let fileI = newFileList.find(f => f.uid == file.uid)
+      if (fileI) {
+      const formFile = new FormData();
+      formFile.append('file', file); 
+      const response = await axios.post( BASE_URL + '/upload', formFile, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('CRM-ctoken')
+        },
+      });
+      if (response.status === 200) {
+        message.success(`${file.name} uploaded successfully.`);
+        fileI.storagename = response.data.file.filename;
+        fileI.status = 'done'
+        fileI.url = BASE_URL + '/download/' + fileI.storagename;
+        setFileList((prev) => ({
+          ...prev,
+          [index]: newFileList, // Store file list under the form item index
+        }))
+      }
+      }
+    } catch (error) {
+      message.error(`${file.name} upload failed.`);
+    }
+  }
+
+  const handleDownloadFile = async (file) => {
+    try {
+    await axios.get(file.url, {
+      responseType: 'blob',
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken')
+      },
+    }).then((response) => {
+    const extname = file.name.toLowerCase().split('.')[file.name.toLowerCase().split('.').length - 1];
+    let contentType = 'application/octet-stream'; // Default content type
+    if (extname === 'png') {
+      contentType = 'image/png';
+    } else if (extname === 'jpg' || extname === 'jpeg') {
+      contentType = 'image/jpeg';
+    }
+    // const blob = new Blob([response.data], {type: contentType})
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', file.name); // Specify the file name to download
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    })
+    } catch (error) {
+      message.error(`${file.name} download failed.`);
     }
   }
 
@@ -84,7 +137,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   label={<span style={formItemLabelStyle}>{field.label}</span>}
                   name={field.name}
                   rules={field.rules}
-                  //   initialValue={field.initialValue}
+                  initialValue={field.value}
                 >
                   <Input placeholder={`Enter ${field.name}`} />
                 </Form.Item>
@@ -96,7 +149,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   label={<span style={formItemLabelStyle}>{field.label}</span>}
                   name={field.name}
                   rules={field.rules}
-                  //   initialValue={field.initialValue}
+                  initialValue={field.value}
                 >
                   <Input.TextArea placeholder={`Enter ${field.name}`} />
                 </Form.Item>
@@ -108,7 +161,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   label={<span style={formItemLabelStyle}>{field.label}</span>}
                   name={field.name}
                   rules={field.rules}
-                  initialValue={field.initialValue}
+                  initialValue={field.value}
                 >
                   <Select placeholder={`Select ${field.name}`}>
                     {field.options.map((option, idx) => (
@@ -126,7 +179,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   label={<span style={formItemLabelStyle}>{field.label}</span>}
                   name={field.name}
                   rules={field.rules}
-                  //   initialValue={field.initialValue}
+                  initialValue={field.value}
                 >
                   <Radio.Group style={{ display: 'inline-grid' }}>
                     {field.options.map((option, idx) => (
@@ -144,9 +197,9 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   label={<span style={formItemLabelStyle}>{field.label}</span>}
                   name={field.name}
                   rules={field.rules}
-                  //   initialValue={field.initialValue}
+                  initialValue={field.value}
                 >
-                  <Checkbox.Group dir style={{ display: 'inline-grid' }}>
+                  <Checkbox.Group style={{ display: 'inline-grid' }}>
                     {field.options.map((option, idx) => (
                       <Checkbox key={idx} value={idx} style={formItemLabelStyle}>
                         {option}
@@ -164,19 +217,11 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
                   rules={field.rules}
                 >
                   <Upload
+                    defaultFileList={field.value ? field.value.fileList : []}
                     name={field.name}
-                    beforeUpload={(file) => {
-                      setFileList([...fileList, file])
-                      return false
-                    }}
-                    onRemove={(file) => {
-                      const ind = fileList.indexOf(file)
-                      const newFileList = fileList.slice()
-                      newFileList.splice(ind, 1)
-                      setFileList(newFileList)
-                    }}
-                    onChange={handleFileChange}
-                    // disabled
+                    beforeUpload={() => false} // Prevent immediate upload
+                    onChange={(info) => handleFileChange(index, info)}
+                    onPreview={(file) => handleDownloadFile(file)}
                   >
                     <Button icon={<UploadOutlined />}>Upload File</Button>
                   </Upload>
@@ -189,7 +234,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
         <Row justify="center">
           <Col>
             <Button type="primary" htmlType="submit">
-              OK
+              Create Form
             </Button>
           </Col>
         </Row>

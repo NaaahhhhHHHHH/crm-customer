@@ -17,6 +17,7 @@ import {
   Card,
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   SearchOutlined,
   CloseOutlined,
@@ -49,12 +50,13 @@ const ServiceTable = () => {
     { type: 'input', label: '', required: false, fieldname: 'field_1' },
   ]) // Default one field
   const navigate = useNavigate()
-
+  const user = useSelector((state) => state.user)
   const [searchText, setSearchText] = useState('')
   const [searchedColumn, setSearchedColumn] = useState('')
   const searchInput = useRef(null)
 
   const handleOpenViewModal = () => {
+    setCurrentService(service)
     setIsViewModalVisible(true)
   }
 
@@ -62,9 +64,21 @@ const ServiceTable = () => {
     setIsViewModalVisible(false)
   }
 
-  const handleSubmitViewModal = (values) => {
-    console.log('Submitted Values:', values)
-    handleCloseViewModal()
+  const handleSubmitViewModal = async (formData) => {
+    try {
+      let submitData = {
+        cid: user.id,
+        sid: currentService.id,
+        data: formData
+      }
+      let res = await createData('form', submitData)
+      loadServices()
+      handleCloseModal()
+      setCurrentService(null)
+      message.success(res.data.message)
+    } catch (error) {
+      handleError(error)
+    }
   }
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -375,9 +389,9 @@ const ServiceTable = () => {
       align: 'center',
       render: (text, record) => (
         <>
-          <Button color="primary" size="large" variant="text" onClick={() => showModal(record)}>
+          {/* <Button color="primary" size="large" variant="text" onClick={() => showModal(record)}>
             <EditOutlined style={{ fontSize: '20px' }} />
-          </Button>
+          </Button> */}
 
           <Button
             color="primary"
@@ -386,9 +400,9 @@ const ServiceTable = () => {
             onClick={() => showViewModal(record)}
             style={{ marginLeft: 5 }}
           >
-            <FolderViewOutlined style={{ fontSize: '20px' }} />
+            Use service
           </Button>
-          <Button
+          {/* <Button
             size="large"
             color="danger"
             variant="text"
@@ -396,7 +410,7 @@ const ServiceTable = () => {
             style={{ marginLeft: 5 }}
           >
             <DeleteOutlined style={{ fontSize: '20px' }} />
-          </Button>
+          </Button> */}
         </>
       ),
     },
@@ -410,21 +424,21 @@ const ServiceTable = () => {
 
   return (
     <>
-      <Row style={{ display: 'block', marginBottom: 5, textAlign: 'right' }}>
-        {/* <Col span={12}>
+      {/* <Row style={{ display: 'block', marginBottom: 5, textAlign: 'right' }}>
+        <Col span={12}>
           <Input.Search
             placeholder="Search by name"
             onSearch={handleSearch}
             enterButton
             style={{ width: '100%' }}
           />
-        </Col> */}
+        </Col>
         <Col>
           <Button color="primary" variant="text" size="large" onClick={() => showModal(null)}>
             <FileAddOutlined style={{ fontSize: '20px' }}></FileAddOutlined>
           </Button>
         </Col>
-      </Row>
+      </Row> */}
       <Table
         columns={columns}
         dataSource={data}

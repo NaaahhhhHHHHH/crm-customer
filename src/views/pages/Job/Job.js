@@ -18,6 +18,7 @@ import {
   Card,
   Tree,
   Tag,
+  Upload
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -30,12 +31,17 @@ import {
   FileAddOutlined,
   UserAddOutlined,
   DownOutlined,
+  UploadOutlined
 } from '@ant-design/icons'
 import { updateData, createData, deleteData, getData } from '../../../api'
 import Highlighter from 'react-highlight-words'
 import DynamicFormModal from './ModalForm'
 import AssignFormModal from './ModalAssign'
 import dayjs from 'dayjs'
+import axios from 'axios'
+const apiUrl =
+  import.meta.env.MODE == 'product' ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_LOCAL
+const BASE_URL = `${apiUrl}/api`
 import { useSelector, useDispatch } from 'react-redux'
 const dateFormat = 'YYYY/MM/DD'
 const timeFormat = 'YYYY/MM/DD hh:mm:ss'
@@ -57,10 +63,12 @@ const ServiceTable = () => {
   const [isViewModalVisible, setIsViewModalVisible] = useState(false)
   const [isAssignModalVisible, setIsAssignModalVisible] = useState(false)
   const [isAssignListModalVisible, setIsAssignListModalVisible] = useState(false)
+  const [isTiketModalVisible, setIsTiketModalVisible] = useState(false)
   // const [currentService, setCurrentService] = useState(null)
   const [currentForm, setCurrentForm] = useState(null)
   const [currentJob, setCurrentJob] = useState(null)
   const [form] = Form.useForm()
+  const [formTicket] = Form.useForm()
   const [assignList, setAssignList] = useState(null)
   const [formAssign] = Form.useForm()
   const [currentStep, setCurrentStep] = useState(0)
@@ -325,43 +333,43 @@ const ServiceTable = () => {
 
   const loadJobs = async () => {
     try {
-      const [response0, response1, response2, response3, response4, response5] = await Promise.all([
+      const [response0, response1, response2] = await Promise.all([
         getData('job'),
         getData('service'),
         getData('form'),
-        getData('customer'),
-        getData('employee'),
-        getData('assignment')
+        // getData('customer'),
+        // getData('employee'),
+        // getData('assignment')
       ]);
 
       let jobList = response0.data
       let formList = response2.data
       let serviceList = response1.data
-      let customerList = response3.data
-      let employeeList = response4.data
-      let assignmentList = response5.data
+      // let customerList = response3.data
+      // let employeeList = response4.data
+      // let assignmentList = response5.data
       jobList.forEach((j) => {
-        j.cname = customerList.find((c) => j.cid == c.id).name
+        //j.cname = customerList.find((c) => j.cid == c.id).name
         j.sname = serviceList.find((s) => j.sid == s.id).name
-        if (role == 'owner') {
-          j.assignable = true
-          j.assigned = true
-        }
-        if (role == 'employee') {
-          let findAssign = assignmentList.find((a) => a.eid == userId && a.jid == j.id)
-          j.assignable = findAssign.reassignment && !findAssign.assignby ? true : false
-          j.assigned = findAssign.status == 'Accepted' ? true : false
-        }
+        // if (role == 'owner') {
+        //   j.assignable = true
+        //   j.assigned = true
+        // }
+        // if (role == 'employee') {
+        //   let findAssign = assignmentList.find((a) => a.eid == userId && a.jid == j.id)
+        //   j.assignable = findAssign.reassignment && !findAssign.assignby ? true : false
+        //   j.assigned = findAssign.status == 'Accepted' ? true : false
+        // }
       })
       setData(jobList)
       let serviceOption = serviceList.map((r) => ({ label: r.name, value: r.id, data: r.formData }))
-      let customerOption = customerList.map((r) => ({ label: r.name, value: r.id }))
-      let employeeOption = employeeList.map((r) => ({ label: r.name, value: r.id }))
+      // let customerOption = customerList.map((r) => ({ label: r.name, value: r.id }))
+      // let employeeOption = employeeList.map((r) => ({ label: r.name, value: r.id }))
       setServiceData(serviceOption)
-      setCustomerData(customerOption)
-      setEmployeeData(employeeOption)
+      //setCustomerData(customerOption)
+      //setEmployeeData(employeeOption)
       setFormDataArray(formList)
-      setAssignmentData(assignmentList)
+      //setAssignmentData(assignmentList)
     } catch (error) {
       handleError(error)
     }
@@ -485,26 +493,17 @@ const ServiceTable = () => {
       title: 'Service Name',
       dataIndex: 'sname',
       key: 'sname',
-      width: 200,
+      width: 300,
       ...getColumnSearchProps('sname'),
       //render: (price) => price.toLocaleString("en-US", {style:"currency", currency:"USD"}),
       sorter: (a, b) => a.sname.localeCompare(b.sname),
       ellipsis: true,
     },
     {
-      title: 'Customer Name',
-      dataIndex: 'cname',
-      key: 'cname',
-      ...getColumnSearchProps('cname'),
-      width: 200,
-      sorter: (a, b) => a.cname.localeCompare(b.cname),
-      ellipsis: true,
-    },
-    {
       title: 'Budget',
       dataIndex: 'budget',
       key: 'budget',
-      width: 150,
+      width: 200,
       // ...getColumnSearchProps('budget'),
       render: (budget) => budget.toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
       sorter: (a, b) => a.budget - b.budget,
@@ -514,7 +513,7 @@ const ServiceTable = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
+      width: 130,
       render: (status) => (
         <>
           <Tag
@@ -552,7 +551,7 @@ const ServiceTable = () => {
       title: 'Create Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 170,
+      width: 190,
       render: (date) => dayjs(date).format(timeFormat),
       sorter: (a, b) => a.createdAt.localeCompare(b.createdAt),
       defaultSortOrder: 'descend',
@@ -579,9 +578,18 @@ const ServiceTable = () => {
             onClick={() => showViewModal(record)}
             style={{ marginLeft: 5 }}
           >
-            <FolderViewOutlined style={{ fontSize: '20px' }} />
+            View form
           </Button>
-          {assignmentData.find((r) => r.jid == record.id) && (
+          <Button
+            color="primary"
+            size="large"
+            variant="text"
+            onClick={() => showTicketModal(record)}
+            style={{ marginLeft: 5 }}
+          >
+            Create Ticket
+          </Button>
+          {/* {assignmentData.find((r) => r.jid == record.id) && (
             <Button
               color="primary"
               size="large"
@@ -617,7 +625,7 @@ const ServiceTable = () => {
             >
               <DeleteOutlined style={{ fontSize: '20px' }} />
             </Button>
-          )}
+          )} */}
         </>
       ),
     },
@@ -631,6 +639,94 @@ const ServiceTable = () => {
     whiteSpace: 'pre-wrap',
     wordWrap: 'break-word',
     maxWidth: '95%',
+  }
+
+  const handleFileChange = async ({ file, fileList: newFileList }) => {
+    try {
+      let fileI = newFileList.find(f => f.uid == file.uid)
+      if (fileI) {
+      const formFile = new FormData();
+      formFile.append('file', file); 
+      const response = await axios.post( BASE_URL + '/upload', formFile, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('CRM-ctoken')
+        },
+      });
+      if (response.status === 200) {
+        message.success(`${file.name} uploaded successfully.`);
+        fileI.storagename = response.data.file.filename;
+        fileI.status = 'done'
+        fileI.url = BASE_URL + '/download/' + fileI.storagename;
+        // setFileList((prev) => ({
+        //   ...prev,
+        //   [index]: newFileList, // Store file list under the form item index
+        // }))
+      }
+      }
+    } catch (error) {
+      message.error(`${file.name} upload failed.`);
+    }
+  }
+
+  const handleDownloadFile = async (file) => {
+    try {
+    await axios.get(file.url, {
+      responseType: 'blob',
+      headers: {
+        Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken')
+      },
+    }).then((response) => {
+    const extname = file.name.toLowerCase().split('.')[file.name.toLowerCase().split('.').length - 1];
+    let contentType = 'application/octet-stream'; // Default content type
+    if (extname === 'png') {
+      contentType = 'image/png';
+    } else if (extname === 'jpg' || extname === 'jpeg') {
+      contentType = 'image/jpeg';
+    }
+    // const blob = new Blob([response.data], {type: contentType})
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', file.name); // Specify the file name to download
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    })
+    } catch (error) {
+      message.error(`${file.name} download failed.`);
+    }
+  }
+
+  const showTicketModal = (CJob) => {
+    setCurrentJob(CJob)
+    // setServiceName(findService.label)
+    setIsTiketModalVisible(true)
+  }
+
+  const handleCloseTicketModal = () => {
+    setCurrentJob(null)
+    setIsTiketModalVisible(false)
+  }
+
+  const handleAddTicket = async () => {
+    //setCurrentJob(null)
+    try {
+    let dataF = formTicket.getFieldsValue()
+    dataF.user = user.name
+    let dataSubmit = {
+      jid: currentJob.id,
+      sid: currentJob.sid,
+      formid: currentJob.formid,
+      cid: user.id,
+      data: [dataF]
+    }
+    let res = await createData('ticket', dataSubmit)
+    handleCloseTicketModal()
+    message.success(res.data.message)
+  } catch (error) {
+    handleError(error)
+  }
   }
 
   return (
@@ -673,23 +769,55 @@ const ServiceTable = () => {
         onSubmit={handleSubmitAssignModal}
       />
       <Modal
-        title={<div style={{ textAlign: 'center', width: '100%' }}>Assign list</div>}
-        open={isAssignListModalVisible}
+        title={<div style={{ textAlign: 'center', width: '100%' }}>Create Ticket</div>}
+        open={isTiketModalVisible}
         style={{ top: 120, maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden' }}
-        width={400}
-        onCancel={handleCloseAssignListModal}
+        width={700}
+        onCancel={handleCloseTicketModal}
         footer={null}
       >
-        <Tree
-          showLine
-          switcherIcon={<DownOutlined />}
-          defaultExpandedKeys={['0']}
-          defaultExpandAll={true}
-          treeData={assignList}
-          titleRender={(item) => {
-            return <div style={{ whiteSpace: 'pre-line' }}>{item.title}</div>
+        <Form
+          form={formTicket}
+          layout="vertical"
+          onFinish={handleAddTicket}
+          style={{
+            marginTop: 20,
+            maxWidth: 'none',
           }}
-        />
+          scrollToFirstError={true}
+        >
+          <Form.Item
+            name="subject"
+            label="Subject"
+            rules={[{ required: true, message: 'Please input subject' }]}
+          >
+            <Input style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="comment"
+            label="Comment"
+            rules={[{ required: true, message: 'Please input comment' }]}
+          >
+            <Input.TextArea rows={7} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="attachment"
+            label="Attachment"
+          >
+            <Upload
+              beforeUpload={() => false}
+              onChange={(info) => handleFileChange(info)}
+              onPreview={(file) => handleDownloadFile(file)}
+            >
+              <Button icon={<UploadOutlined />}>Attach File</Button>
+            </Upload>
+          </Form.Item>
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <Button type="primary" htmlType="submit">
+              Create
+            </Button>
+          </div>
+        </Form>
       </Modal>
       <Modal
         title={modalTitle}

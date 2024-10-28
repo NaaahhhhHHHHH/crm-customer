@@ -42,7 +42,7 @@ const Login = () => {
     try {
       // Call the login API function from api.js
       const data = await login(username, password).then((res) => {
-        localStorage.setItem('CRM-token', res.token)
+        localStorage.setItem('CRM-ctoken', res.token)
         dispatch({ type: 'set', user: res.user })
         // if (!res.user.verification) {
         //   navigate('/verification')

@@ -76,7 +76,7 @@ const AppHeaderDropdown = () => {
     try {
       await auth().then((res) => {
         dispatch({ type: 'set', user: res.data.user })
-        localStorage.setItem('CRM-token', res.data.token)
+        localStorage.setItem('CRM-ctoken', res.data.token)
         // name = res.user && res.user.name
         //   ? res.user.name.split(' ')[0]
         //   : ''
@@ -105,7 +105,7 @@ const AppHeaderDropdown = () => {
     //setErrorMessage(null) // Clear previous errors
     try {
       dispatch({ type: 'set', user: null })
-      localStorage.removeItem('CRM-token')
+      localStorage.removeItem('CRM-ctoken')
       // if (!res.user.verification) {
       //   navigate('/verification')
       // }
@@ -163,14 +163,14 @@ const AppHeaderDropdown = () => {
         {/* {Avatar()} */}
       </CDropdownToggle>
       <CDropdownMenu className="pt-0" placement="bottom-end">
-        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
+        {/* <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
         <CDropdownItem href="#/Job/Job">
           <CIcon icon={cilBell} className="me-2" />
           Jobs
           <CBadge color="info" className="ms-2">
             {countJob}
           </CBadge>
-        </CDropdownItem>
+        </CDropdownItem> */}
         {/* <CDropdownItem href="#">
           <CIcon icon={cilEnvelopeOpen} className="me-2" />
           Messages
@@ -178,13 +178,13 @@ const AppHeaderDropdown = () => {
             42
           </CBadge>
         </CDropdownItem> */}
-        <CDropdownItem href="#/Job/Assign">
+        {/* <CDropdownItem href="#/Job/Assign">
           <CIcon icon={cilTask} className="me-2" />
           Tasks
           <CBadge color="danger" className="ms-2">
             {countTask}
           </CBadge>
-        </CDropdownItem>
+        </CDropdownItem> */}
         {/* <CDropdownItem href="#">
           <CIcon icon={cilCommentSquare} className="me-2" />
           Comments

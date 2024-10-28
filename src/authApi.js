@@ -7,7 +7,7 @@ const apiUrl =
 const BASE_URL = `${apiUrl}/api`
 
 const getAuthToken = () => {
-  return localStorage.getItem('CRM-token')
+  return localStorage.getItem('CRM-ctoken')
 }
 
 const axiosInstance = axios.create({

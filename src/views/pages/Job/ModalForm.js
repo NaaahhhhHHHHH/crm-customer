@@ -69,7 +69,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
       const response = await axios.post( BASE_URL + '/upload', formFile, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': 'Bearer ' + localStorage.getItem('CRM-token')
+          'Authorization': 'Bearer ' + localStorage.getItem('CRM-ctoken')
         },
       });
       if (response.status === 200) {
@@ -93,7 +93,7 @@ const DynamicFormModal = ({ title, visible, onClose, formDataArray, onSubmit }) 
     await axios.get(file.url, {
       responseType: 'blob',
       headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('CRM-token')
+        Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken')
       },
     }).then((response) => {
     const extname = file.name.toLowerCase().split('.')[file.name.toLowerCase().split('.').length - 1];
