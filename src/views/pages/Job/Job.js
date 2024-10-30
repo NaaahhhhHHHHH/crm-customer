@@ -18,7 +18,7 @@ import {
   Card,
   Tree,
   Tag,
-  Upload
+  Upload,
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -31,7 +31,7 @@ import {
   FileAddOutlined,
   UserAddOutlined,
   DownOutlined,
-  UploadOutlined
+  UploadOutlined,
 } from '@ant-design/icons'
 import { updateData, createData, deleteData, getData } from '../../../api'
 import Highlighter from 'react-highlight-words'
@@ -288,7 +288,11 @@ const ServiceTable = () => {
   }, [user])
 
   const handleError = (error) => {
-    message.error((error.response && error.response.data ? error.response.data.message: '') || error.message|| error.message)
+    message.error(
+      (error.response && error.response.data ? error.response.data.message : '') ||
+        error.message ||
+        error.message,
+    )
     if (error.status == 401) {
       navigate('/login')
     } else if (error.status === 500) {
@@ -340,7 +344,7 @@ const ServiceTable = () => {
         // getData('customer'),
         // getData('employee'),
         // getData('assignment')
-      ]);
+      ])
 
       let jobList = response0.data
       let formList = response2.data
@@ -487,7 +491,8 @@ const ServiceTable = () => {
       ...getColumnSearchProps('id'),
       //render: (price) => price.toLocaleString("en-US", {style:"currency", currency:"USD"}),
       sorter: (a, b) => a.id - b.id,
-      ellipsis: true,
+      // ellipsis: true,
+      fixed: 'left',
     },
     {
       title: 'Service Name',
@@ -497,7 +502,8 @@ const ServiceTable = () => {
       ...getColumnSearchProps('sname'),
       //render: (price) => price.toLocaleString("en-US", {style:"currency", currency:"USD"}),
       sorter: (a, b) => a.sname.localeCompare(b.sname),
-      ellipsis: true,
+      className: 'custom-width',
+      textWrap: 'word-break',
     },
     {
       title: 'Budget',
@@ -507,7 +513,8 @@ const ServiceTable = () => {
       // ...getColumnSearchProps('budget'),
       render: (budget) => budget.toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
       sorter: (a, b) => a.budget - b.budget,
-      ellipsis: true,
+      className: 'custom-width',
+      textWrap: 'word-break',
     },
     {
       title: 'Status',
@@ -555,7 +562,7 @@ const ServiceTable = () => {
       render: (date) => dayjs(date).format(timeFormat),
       sorter: (a, b) => a.createdAt.localeCompare(b.createdAt),
       defaultSortOrder: 'descend',
-      ellipsis: true,
+      // ellipsis: true,
     },
     // {
     //   title: 'Description',
@@ -569,6 +576,7 @@ const ServiceTable = () => {
       title: 'Action',
       key: 'action',
       align: 'center',
+      fixed: 'right',
       render: (text, record) => (
         <>
           <Button
@@ -643,58 +651,62 @@ const ServiceTable = () => {
 
   const handleFileChange = async ({ file, fileList: newFileList }) => {
     try {
-      let fileI = newFileList.find(f => f.uid == file.uid)
+      let fileI = newFileList.find((f) => f.uid == file.uid)
       if (fileI) {
-      const formFile = new FormData();
-      formFile.append('file', file); 
-      const response = await axios.post( BASE_URL + '/upload', formFile, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': 'Bearer ' + localStorage.getItem('CRM-ctoken')
-        },
-      });
-      if (response.status === 200) {
-        message.success(`${file.name} uploaded successfully.`);
-        fileI.storagename = response.data.file.filename;
-        fileI.status = 'done'
-        fileI.url = BASE_URL + '/download/' + fileI.storagename;
-        // setFileList((prev) => ({
-        //   ...prev,
-        //   [index]: newFileList, // Store file list under the form item index
-        // }))
-      }
+        const formFile = new FormData()
+        formFile.append('file', file)
+        const response = await axios.post(BASE_URL + '/upload', formFile, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken'),
+          },
+        })
+        if (response.status === 200) {
+          message.success(`${file.name} uploaded successfully.`)
+          fileI.storagename = response.data.file.filename
+          fileI.status = 'done'
+          fileI.url = BASE_URL + '/download/' + fileI.storagename
+          // setFileList((prev) => ({
+          //   ...prev,
+          //   [index]: newFileList, // Store file list under the form item index
+          // }))
+        }
       }
     } catch (error) {
-      message.error(`${file.name} upload failed.`);
+      message.error(`${file.name} upload failed.`)
     }
   }
 
   const handleDownloadFile = async (file) => {
     try {
-    await axios.get(file.url, {
-      responseType: 'blob',
-      headers: {
-        Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken')
-      },
-    }).then((response) => {
-    const extname = file.name.toLowerCase().split('.')[file.name.toLowerCase().split('.').length - 1];
-    let contentType = 'application/octet-stream'; // Default content type
-    if (extname === 'png') {
-      contentType = 'image/png';
-    } else if (extname === 'jpg' || extname === 'jpeg') {
-      contentType = 'image/jpeg';
-    }
-    // const blob = new Blob([response.data], {type: contentType})
-    const url = URL.createObjectURL(response.data);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', file.name); // Specify the file name to download
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    })
+      await axios
+        .get(file.url, {
+          responseType: 'blob',
+          headers: {
+            Authorization: 'Bearer ' + localStorage.getItem('CRM-ctoken'),
+          },
+        })
+        .then((response) => {
+          const extname = file.name.toLowerCase().split('.')[
+            file.name.toLowerCase().split('.').length - 1
+          ]
+          let contentType = 'application/octet-stream' // Default content type
+          if (extname === 'png') {
+            contentType = 'image/png'
+          } else if (extname === 'jpg' || extname === 'jpeg') {
+            contentType = 'image/jpeg'
+          }
+          // const blob = new Blob([response.data], {type: contentType})
+          const url = URL.createObjectURL(response.data)
+          const link = document.createElement('a')
+          link.href = url
+          link.setAttribute('download', file.name) // Specify the file name to download
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+        })
     } catch (error) {
-      message.error(`${file.name} download failed.`);
+      message.error(`${file.name} download failed.`)
     }
   }
 
@@ -712,21 +724,21 @@ const ServiceTable = () => {
   const handleAddTicket = async () => {
     //setCurrentJob(null)
     try {
-    let dataF = formTicket.getFieldsValue()
-    dataF.user = user.name
-    let dataSubmit = {
-      jid: currentJob.id,
-      sid: currentJob.sid,
-      formid: currentJob.formid,
-      cid: user.id,
-      data: [dataF]
+      let dataF = formTicket.getFieldsValue()
+      dataF.user = user.name
+      let dataSubmit = {
+        jid: currentJob.id,
+        sid: currentJob.sid,
+        formid: currentJob.formid,
+        cid: user.id,
+        data: [dataF],
+      }
+      let res = await createData('ticket', dataSubmit)
+      handleCloseTicketModal()
+      message.success(res.data.message)
+    } catch (error) {
+      handleError(error)
     }
-    let res = await createData('ticket', dataSubmit)
-    handleCloseTicketModal()
-    message.success(res.data.message)
-  } catch (error) {
-    handleError(error)
-  }
   }
 
   return (
@@ -751,6 +763,10 @@ const ServiceTable = () => {
         dataSource={data}
         pagination={{ pageSize: 5 }}
         locale={{ emptyText: 'No jobs found' }}
+        scroll={{
+          x: '100%',
+        }}
+        tableLayout="auto"
       />
       <DynamicFormModal
         title={serviceName}
@@ -771,7 +787,7 @@ const ServiceTable = () => {
       <Modal
         title={<div style={{ textAlign: 'center', width: '100%' }}>Create Ticket</div>}
         open={isTiketModalVisible}
-        style={{ top: 120, maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden' }}
+        style={{ top: 120, overflowY: 'auto', overflowX: 'hidden' }}
         width={700}
         onCancel={handleCloseTicketModal}
         footer={null}
@@ -800,10 +816,7 @@ const ServiceTable = () => {
           >
             <Input.TextArea rows={7} style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item
-            name="attachment"
-            label="Attachment"
-          >
+          <Form.Item name="attachment" label="Attachment">
             <Upload
               beforeUpload={() => false}
               onChange={(info) => handleFileChange(info)}
@@ -822,7 +835,7 @@ const ServiceTable = () => {
       <Modal
         title={modalTitle}
         open={isModalVisible}
-        style={{ top: 120, maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden' }}
+        style={{ top: 120, overflowY: 'auto', overflowX: 'hidden' }}
         width={700}
         onCancel={handleCloseModal}
         footer={null}

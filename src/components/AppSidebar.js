@@ -8,6 +8,7 @@ import {
   CSidebarFooter,
   CSidebarHeader,
   CSidebarToggler,
+  CImage,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 
@@ -15,6 +16,9 @@ import { AppSidebarNav } from './AppSidebarNav'
 
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
+const apiUrl =
+  import.meta.env.MODE == 'product' ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_LOCAL
+const BASE_URL = `${apiUrl}/api`
 
 // sidebar nav config
 import navigation from '../_nav'
@@ -43,8 +47,9 @@ const AppSidebar = () => {
     >
       <CSidebarHeader>
         <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={60} />
-          <CIcon customClassName="sidebar-brand" icon={sygnet} height={60} />
+          {/* <CIcon customClassName="sidebar-brand-full" icon={logo} height={60} />
+          <CIcon customClassName="sidebar-brand" icon={sygnet} height={60} /> */}
+          <CImage src={BASE_URL + '/downloadLogo'} alt="Logo" height={60}></CImage>
         </CSidebarBrand>
         <CCloseButton
           className="d-lg-none"

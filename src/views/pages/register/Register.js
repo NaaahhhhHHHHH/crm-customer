@@ -111,6 +111,8 @@ const Register = () => {
                       type="email"
                       required
                       placeholder="Email"
+                      pattern="[a-zA-Z0-9.!#$%&กว*+\/=?^_`\{\|\}~\-]+@[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)*$"
+                      title="Please enter a valid email"
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
                     />
@@ -120,12 +122,12 @@ const Register = () => {
                       <CIcon icon={cilMobile} />
                     </CInputGroupText>
                     <CFormInput
-                      type="tel"
+                      type="text"
                       required
                       placeholder="Mobile Phone Number"
                       onChange={(e) => setMobile(e.target.value)}
-                      pattern="^(\+?\d{1,3}?[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$"
-                      title="Please enter a valid phone number (e.g., 123-456-7890 or +91 (123) 456-7890)"
+                      pattern="(?:\(\d{3}\)|\d{3})[\- ]?\d{3}[\- ]?\d{4}"
+                      title="Please enter a valid phone number (e.g., 1234567890 or 123-456-7890 or (123) 456-7890)"
                       autoComplete="phonenumber"
                     />
                   </CInputGroup>
@@ -134,11 +136,11 @@ const Register = () => {
                       <CIcon icon={cilPhone} />
                     </CInputGroupText>
                     <CFormInput
-                      type="tel"
+                      type="text"
                       placeholder="Work Phone Number"
                       onChange={(e) => setWork(e.target.value)}
-                      pattern="^(\+?\d{1,3}?[-.\s]?)?(\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}$"
-                      title="Please enter a valid phone number (e.g., 123-456-7890 or +91 (123) 456-7890)"
+                      pattern="(?:\(\d{3}\)|\d{3})[\- ]?\d{3}[\- ]?\d{4}"
+                      title="Please enter a valid phone number (e.g., 1234567890 or 123-456-7890 or (123) 456-7890)"
                       autoComplete="phonenumber"
                     />
                   </CInputGroup>
@@ -150,6 +152,8 @@ const Register = () => {
                       required
                       type="password"
                       onChange={(e) => setPassword(e.target.value)}
+                      pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                      title="Must contain at least one  number and one uppercase and lowercase letter, and at least 8 or more characters"
                       placeholder="Password"
                       autoComplete="new-password"
                       minLength={8}

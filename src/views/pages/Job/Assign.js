@@ -289,7 +289,11 @@ const ServiceTable = () => {
   }, [user])
 
   const handleError = (error) => {
-    message.error((error.response && error.response.data ? error.response.data.message: '') || error.message|| error.message)
+    message.error(
+      (error.response && error.response.data ? error.response.data.message : '') ||
+        error.message ||
+        error.message,
+    )
     if (error.status == 401) {
       navigate('/login')
     } else if (error.status === 500) {
@@ -299,14 +303,13 @@ const ServiceTable = () => {
 
   const loadAssign = async () => {
     try {
-      
       const [response0, response1, response2, response4, response5] = await Promise.all([
         getData('job'),
         getData('service'),
         getData('form'),
         getData('employee'),
-        getData('assignment')
-      ]);
+        getData('assignment'),
+      ])
 
       let jobList = response0.data
       let formList = response2.data
@@ -497,6 +500,7 @@ const ServiceTable = () => {
               >{`${payment.period ? 'Total:' : ''} ${payment.budget}$`}</p>
               {payment.period &&
                 payment.period.map((value, idx) => (
+                  // eslint-disable-next-line react/jsx-key
                   <p
                     style={{
                       margin: 0,
@@ -515,6 +519,7 @@ const ServiceTable = () => {
           >{`${payment.period ? 'Total:' : ''} ${payment.budget}$`}</p>
           {payment.period &&
             payment.period.map((value, idx) => (
+              // eslint-disable-next-line react/jsx-key
               <p
                 style={{
                   margin: 0,
@@ -718,7 +723,7 @@ const ServiceTable = () => {
       <Modal
         title={modalTitle}
         open={isModalVisible}
-        style={{ top: 120, maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden' }}
+        style={{ top: 120, overflowY: 'auto', overflowX: 'hidden' }}
         width={700}
         onCancel={handleCloseModal}
         footer={null}

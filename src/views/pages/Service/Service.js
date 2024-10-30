@@ -69,7 +69,7 @@ const ServiceTable = () => {
       let submitData = {
         cid: user.id,
         sid: currentService.id,
-        data: formData
+        data: formData,
       }
       let res = await createData('form', submitData)
       loadServices()
@@ -190,7 +190,11 @@ const ServiceTable = () => {
   }, [])
 
   const handleError = (error) => {
-    message.error((error.response && error.response.data ? error.response.data.message: '') || error.message|| error.message)
+    message.error(
+      (error.response && error.response.data ? error.response.data.message : '') ||
+        error.message ||
+        error.message,
+    )
     if (error.status == 401) {
       navigate('/login')
     } else if (error.status === 500) {
@@ -354,7 +358,10 @@ const ServiceTable = () => {
       ...getColumnSearchProps('name'),
       width: 200,
       sorter: (a, b) => a.name.localeCompare(b.name),
-      ellipsis: true,
+      className: 'custom-width',
+      minWidth: 200,
+      textWrap: 'word-break',
+      fixed: 'left',
     },
     {
       title: 'Price',
@@ -363,7 +370,9 @@ const ServiceTable = () => {
       width: 200,
       render: (price) => price.toLocaleString('en-US', { style: 'currency', currency: 'USD' }),
       sorter: (a, b) => a.price - b.price,
-      ellipsis: true,
+      className: 'custom-width',
+      minWidth: 200,
+      textWrap: 'word-break',
     },
     {
       title: 'Description',
@@ -371,7 +380,9 @@ const ServiceTable = () => {
       width: 400,
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true,
+      className: 'custom-width-long',
+      minWidth: 300,
+      textWrap: 'word-break',
     },
     {
       title: 'Create Date',
@@ -381,12 +392,14 @@ const ServiceTable = () => {
       render: (date) => dayjs(date).format(timeFormat),
       sorter: (a, b) => a.createdAt.localeCompare(b.createdAt),
       defaultSortOrder: 'descend',
-      ellipsis: true,
+      // ellipsis: true,
     },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
+      minWidth: 100,
+      fixed: 'right',
       render: (text, record) => (
         <>
           {/* <Button color="primary" size="large" variant="text" onClick={() => showModal(record)}>
@@ -444,6 +457,10 @@ const ServiceTable = () => {
         dataSource={data}
         pagination={{ pageSize: 5 }}
         locale={{ emptyText: 'No services found' }}
+        scroll={{
+          x: '100%',
+        }}
+        tableLayout="auto"
       />
       <DynamicFormModal
         title={serviceName}
@@ -455,7 +472,7 @@ const ServiceTable = () => {
       <Modal
         title={modalTitle}
         open={isModalVisible}
-        style={{ top: 120, maxHeight: '85vh', overflowY: 'auto', overflowX: 'hidden' }}
+        style={{ top: 120, overflowY: 'auto', overflowX: 'hidden' }}
         width={1000}
         onCancel={handleCloseModal}
         footer={null}
