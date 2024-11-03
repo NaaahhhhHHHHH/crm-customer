@@ -17,7 +17,7 @@ import { toast } from 'react-hot-toast'
 import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { updateData, createData, deleteData, getData } from '../../../api'
-import { cilLockLocked, cilUser, cilPhone, cilMedicalCross, cilMobile } from '@coreui/icons'
+import { cilLockLocked, cilUser, cilPhone, cilMedicalCross, cilMobile, cilUserX } from '@coreui/icons'
 
 const Register = () => {
   const navigate = useNavigate()
@@ -75,6 +75,7 @@ const Register = () => {
         toast.success('Registration successful, please verify your email')
         navigate('/login')
       })
+      await createData('sendEmailConFirm', { email: email})
     } catch (error) {
       // Handle error (e.g., wrong credentials or server error)
       // setErrorMessage(error.message)
@@ -98,11 +99,10 @@ const Register = () => {
                     </CInputGroupText>
                     <CFormInput
                       required
-                      type="username"
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Username"
-                      autoComplete="username"
-                      minLength={6}
+                      type="name"
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Full Name"
+                      autoComplete="name"
                     />
                   </CInputGroup>
                   <CInputGroup className="mb-3">
@@ -111,7 +111,6 @@ const Register = () => {
                       type="email"
                       required
                       placeholder="Email"
-                      pattern="[a-zA-Z0-9.!#$%&กว*+\/=?^_`\{\|\}~\-]+@[a-zA-Z0-9\-]+(?:\.[a-zA-Z0-9\-]+)*$"
                       title="Please enter a valid email"
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
@@ -142,6 +141,19 @@ const Register = () => {
                       pattern="(?:\(\d{3}\)|\d{3})[\- ]?\d{3}[\- ]?\d{4}"
                       title="Please enter a valid phone number (e.g., 1234567890 or 123-456-7890 or (123) 456-7890)"
                       autoComplete="phonenumber"
+                    />
+                  </CInputGroup>
+                  <CInputGroup className="mb-3">
+                    <CInputGroupText>
+                      <CIcon icon={cilUser} />
+                    </CInputGroupText>
+                    <CFormInput
+                      required
+                      type="username"
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Username"
+                      autoComplete="username"
+                      minLength={6}
                     />
                   </CInputGroup>
                   <CInputGroup className="mb-3">
