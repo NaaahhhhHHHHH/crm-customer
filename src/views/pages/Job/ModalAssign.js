@@ -173,6 +173,7 @@ const AssignFormModal = ({
         onFinish={handleFinish}
         labelCol={{ span: 6 }}
         wrapperCol={{ span: 15 }}
+        scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
       >
         {fields && (
           <>
