@@ -11,6 +11,7 @@ import {
   CInputGroup,
   CInputGroupText,
   CRow,
+  CImage
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { toast } from 'react-hot-toast'
@@ -18,6 +19,9 @@ import { Link } from 'react-router-dom'
 import { useNavigate } from 'react-router-dom'
 import { updateData, createData, deleteData, getData } from '../../../api'
 import { cilLockLocked, cilUser, cilPhone, cilMedicalCross, cilMobile, cilUserX } from '@coreui/icons'
+const apiUrl =
+  import.meta.env.MODE == 'product' ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_LOCAL
+const BASE_URL = `${apiUrl}/api`
 
 const Register = () => {
   const navigate = useNavigate()
@@ -84,6 +88,10 @@ const Register = () => {
     }
   }
   return (
+    <>
+    <div style={{position: "absolute"}}>
+      <CImage src={BASE_URL + '/downloadLogo'} alt="Logo" height={50}></CImage>
+    </div>
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
         <CRow className="justify-content-center">
@@ -203,6 +211,7 @@ const Register = () => {
         </CRow>
       </CContainer>
     </div>
+    </>
   )
 }
 

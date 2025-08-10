@@ -32,6 +32,7 @@ import {
   UserAddOutlined,
   DownOutlined,
   UploadOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons'
 import { updateData, createData, deleteData, getData } from '../../../api'
 import Highlighter from 'react-highlight-words'
@@ -46,12 +47,22 @@ import { useSelector, useDispatch } from 'react-redux'
 const dateFormat = 'YYYY/MM/DD'
 const timeFormat = 'YYYY/MM/DD hh:mm:ss'
 
+import { pdf, PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import ReactDOM from 'react-dom';
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+
 const { Step } = Steps
 const { TextArea } = Input
 
 const ServiceTable = () => {
   const [data, setData] = useState([])
   const [customerData, setCustomerData] = useState([])
+  const [viewMode, setViewMode] = useState('table') // 'table' | 'calendar'
+  const [currentData, setCurrentData] = useState([])
+  const [isModalExportVisible, setIsModalExportVisible] = useState(false)
   const [employeeData, setEmployeeData] = useState([])
   const [serviceData, setServiceData] = useState([])
   const [assignmentData, setAssignmentData] = useState([])
@@ -68,10 +79,13 @@ const ServiceTable = () => {
   const [currentForm, setCurrentForm] = useState(null)
   const [currentJob, setCurrentJob] = useState(null)
   const [form] = Form.useForm()
+  const [formExport] = Form.useForm()
   const [formTicket] = Form.useForm()
   const [assignList, setAssignList] = useState(null)
   const [formAssign] = Form.useForm()
   const [currentStep, setCurrentStep] = useState(0)
+  const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+  const [selfData, setSelfData] = useState(null)
   // const [step1Values, setStep1Values] = useState({})
   const [formDataArray, setFormDataArray] = useState([]) // Default one field
   const navigate = useNavigate()
@@ -337,10 +351,11 @@ const ServiceTable = () => {
 
   const loadJobs = async () => {
     try {
-      const [response0, response1, response2] = await Promise.all([
+      const [response0, response1, response2, response3] = await Promise.all([
         getData('job'),
         getData('service'),
         getData('form'),
+        getData(`${role}/${userId}`)
         // getData('customer'),
         // getData('employee'),
         // getData('assignment')
@@ -349,6 +364,7 @@ const ServiceTable = () => {
       let jobList = response0.data
       let formList = response2.data
       let serviceList = response1.data
+      let personInfo = response3.data
       // let customerList = response3.data
       // let employeeList = response4.data
       // let assignmentList = response5.data
@@ -366,6 +382,8 @@ const ServiceTable = () => {
         // }
       })
       setData(jobList)
+      setSelfData(personInfo)
+      setCurrentData(jobList)
       let serviceOption = serviceList.map((r) => ({ label: r.name, value: r.id, data: r.formData }))
       // let customerOption = customerList.map((r) => ({ label: r.name, value: r.id }))
       // let employeeOption = employeeList.map((r) => ({ label: r.name, value: r.id }))
@@ -407,6 +425,27 @@ const ServiceTable = () => {
     // }
     setIsModalVisible(true)
     setCurrentStep(0)
+  }
+
+  const showModalExport = (CJob) => {
+    if (CJob) {
+      setCurrentJob(CJob)
+    }
+    setIsModalExportVisible(true)
+  }
+
+  const handleCloseModalExport = () => {
+    setIsModalExportVisible(false)
+    setCurrentJob(null)
+    formExport.resetFields()
+  }
+
+
+  const handleExport = () => {
+    let formValue = formExport.getFieldsValue()
+    //console.log(formValue);
+    downloadInvoicePDF(currentJob ? currentJob.id : null, formValue)
+    handleCloseModalExport();
   }
 
   const handleDelete = async (id) => {
@@ -595,7 +634,7 @@ const ServiceTable = () => {
             onClick={() => showTicketModal(record)}
             style={{ marginLeft: 5 }}
           >
-            Create Ticket
+            Inquiry / Questions
           </Button>
           {/* {assignmentData.find((r) => r.jid == record.id) && (
             <Button
@@ -634,6 +673,14 @@ const ServiceTable = () => {
               <DeleteOutlined style={{ fontSize: '20px' }} />
             </Button>
           )} */}
+          <Button
+              color="primary"
+              size="large"
+              variant="text"
+              onClick={() => showModalExport(record)}
+              disabled={viewMode === "table" ? false : true}>
+            <DownloadOutlined style={{ fontSize: '20px' }} />
+          </Button>
         </>
       ),
     },
@@ -741,33 +788,405 @@ const ServiceTable = () => {
     }
   }
 
+  const events = data.map((job) => ({
+    id: job.id,
+    title: `${job.sname}
+    ${job.cname}`,
+    start: dayjs(job.createdAt).format("YYYY-MM-DD"),
+  }));
+
+  // Utility: Split an array into chunks of `size` items
+function chunkArray(items, size) {
+  const chunks = [];
+  for (let i = 0; i < items.length; i += size) {
+    if (i) size += 10;
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+// A wrapper to render a full-page background behind every Page
+const PageWithBackground = ({ bgDataURL, styles, children }) => (
+  <Page size="A4" style={styles.page}>
+    <Image src={bgDataURL} style={styles.background} fixed />
+    {children}
+  </Page>
+);
+
+const downloadInvoicePDF = async (jid, formValue) => {
+  let invoiceData = {
+    invoiceNumber: 0,
+    invoiceDate: '',
+    orderNumber: 0,
+    orderDate: '',
+    paymentMethod: formValue.paymentMethod,
+    user: {
+      name: selfData.name,
+      address: selfData.address,
+      email: selfData.email,
+      phone: selfData.phone
+    },
+    customer: {
+      name: formValue.name,
+      address: formValue.address,
+      cityStateZip: formValue.zip,
+      email: formValue.email,
+      phone: formValue.phone
+    },
+    products: [],
+    subtotal: 0,
+    shipping: 0,
+    total: 0,
+  }
+  let dataExport = jid ? data.filter(r => r.id == jid) : currentData;
+  if (!dataExport.length) return;
+  dataExport.forEach(r => {
+    invoiceData.orderNumber = Math.max(invoiceData.orderNumber, r.id)
+    invoiceData.invoiceNumber = Math.max(invoiceData.orderNumber, r.id)
+    let jobM = data.find(r => r.id == invoiceData.orderNumber)
+    invoiceData.invoiceDate = dayjs(jobM.createdAt).format("DD/MM/YYYY")
+    invoiceData.orderDate = dayjs(jobM.createdAt).format("DD/MM/YYYY")
+    let invoiceS = invoiceData.products.findIndex(j => j.sid == r.sid);
+    if (invoiceS >= 0) {
+      invoiceData.products[invoiceS].quantity++;
+      invoiceData.products[invoiceS].price += r.budget;
+    } else {
+      invoiceData.products.push({
+        name: r.sname,
+        quantity: 1,
+        sid: r.sid,
+        price: r.budget,
+      })
+    }
+  })
+  invoiceData.products.forEach(p => {
+    invoiceData.subtotal += p.price;
+  })
+  invoiceData.total = invoiceData.subtotal + invoiceData.shipping;
+
+  // Convert a Blob to a Data URL
+  const toDataURL = blob =>
+    new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+
+  // 1. Fetch logo and background images
+  const [logoRes, bgRes] = await Promise.all([
+    fetch(`${BASE_URL}/downloadLogo`),
+    fetch(`${BASE_URL}/downloadBackground`),
+  ]);
+  const [logoBlob, bgBlob] = await Promise.all([
+    logoRes.blob(),
+    bgRes.blob(),
+  ]);
+  const [logoDataURL, bgDataURL] = await Promise.all([
+    toDataURL(logoBlob),
+    toDataURL(bgBlob),
+  ]);
+
+  // 2. Define styles
+  const styles = StyleSheet.create({
+    page: {
+      position: 'relative',
+      paddingTop: 30,
+      paddingBottom: 30,
+      paddingLeft: 40,
+      paddingRight: 40,
+      fontSize: 9,
+      fontFamily: 'Helvetica',
+    },
+    background: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: 595,
+      height: 842,
+      zIndex: -1,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 20
+    },
+    logo: { height: 30, marginBottom: 12, position: 'absolute', zIndex: 0, top: 0,left: 0,},
+    logoBlock: { flex: 8.5},
+    companyBlock: { flex: 3, marginBottom: 20 },
+    invoiceTitle: {
+      fontSize: 18,
+      textAlign: 'left',
+      marginBottom: 20,
+      textTransform: 'uppercase',
+      fontWeight: 'bold'
+    },
+    section: { marginBottom: 12 },
+    tableHeader: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: '#444',
+      paddingBottom: 4,
+      paddingTop: 4,
+      marginBottom: 4,
+      alignItems: 'center',
+      color: "white",
+      backgroundColor: "black",
+    },
+    tableRow: {
+      flexDirection: 'row',
+      borderBottomWidth: 0.5,
+      borderBottomColor: '#bbb',
+      paddingVertical: 3,
+      alignItems: 'center',
+    },
+    colProduct: { flex: 4, textAlign: 'left', paddingRight: "5px" },
+    colQty: { flex: 1, textAlign: 'left' },
+    colPrice: { flex: 1, textAlign: 'left' },
+    totalsContainer: {
+      flexDirection: 'column',
+      width: '100%',
+    },
+    totalLine: {
+      flexDirection: 'row',
+      paddingVertical: 2,
+    },
+    totalEmpty: {
+      flex: 4,
+      textAlign: 'left',
+    },
+    totalLabel: {
+      flex: 1,
+      textAlign: 'left',
+      borderBottomWidth: 1,
+      borderBottomColor: 'black',
+      fontWeight: "bold"
+    },
+    totalValue: {
+      flex: 1, 
+      textAlign: 'left',
+      borderBottomWidth: 1,
+      borderBottomColor: 'black',
+    },
+  });
+
+  // 3. Paginate products: assume ~30 rows per page
+  const productPages = chunkArray(invoiceData.products, 30);
+
+  // 4. Build the PDF document
+  const InvoiceDoc = (
+    <Document>
+      {productPages.map((prodChunk, pageIndex) => (
+        <PageWithBackground
+          key={pageIndex}
+          bgDataURL={bgDataURL}
+          styles={styles}
+        >
+          {/* FIRST PAGE: Logo + Company + INVOICE + Billing & Invoice info */}
+          {pageIndex === 0 && (
+            <>
+              <View style={styles.infoRow}>
+                <View style={styles.logoBlock}>
+                  <Image src={logoDataURL} style={styles.logo} fixed/>
+                </View>
+                <View style={styles.companyBlock}>
+                  <Text style={{fontWeight: "bold"}}>Allinclicks</Text>
+                  <Text>800 Walnut Creek Dr NW</Text>
+                  <Text>Lilburn, GA 30047</Text>
+                  <Text>United States (US)</Text>
+                </View>
+              </View>
+
+              <Text style={styles.invoiceTitle}>Invoice</Text>
+              <View style={styles.infoRow}>
+                <View style={styles.section}>
+                  <Text>{invoiceData.customer.name}</Text>
+                  <Text>{invoiceData.customer.address}</Text>
+                  <Text>{invoiceData.customer.cityStateZip}</Text>
+                  <Text>{invoiceData.customer.email}</Text>
+                  <Text>{invoiceData.customer.phone}</Text>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={{fontWeight: "bold"}}>Ship to:</Text>
+                  <Text>{invoiceData.customer.name}</Text>
+                  <Text>{invoiceData.customer.address}</Text>
+                  <Text>{invoiceData.customer.cityStateZip}</Text>
+                  <Text>{invoiceData.customer.phone}</Text>
+                </View>
+
+                <View style={styles.section}>
+                  <Text>Invoice Number: {invoiceData.invoiceNumber}</Text>
+                  <Text>Invoice Date: {invoiceData.invoiceDate}</Text>
+                  <Text>Order Number: {invoiceData.orderNumber}</Text>
+                  <Text>Order Date: {invoiceData.orderDate}</Text>
+                  <Text>Payment Method: {invoiceData.paymentMethod}</Text>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* PRODUCT TABLE */}
+          <View style={styles.section}>
+            <View style={styles.tableHeader}>
+              <Text style={{...styles.colProduct, fontWeight: 'bold'}}> Product</Text>
+              <Text style={{...styles.colQty, fontWeight: 'bold'}}>Quantity</Text>
+              <Text style={{...styles.colPrice, fontWeight: 'bold'}}>Price</Text>
+            </View>
+            {prodChunk.map((item, i) => (
+              <View key={i} style={styles.tableRow}>
+                <Text style={styles.colProduct}> {item.name}</Text>
+                <Text style={styles.colQty}>{item.quantity}</Text>
+                <Text style={styles.colPrice}>
+                  ${item.price.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* LAST PAGE: Email/Phone + Ship To + Totals */}
+          {pageIndex === productPages.length - 1 && (
+            <>
+              <View style={styles.totalsContainer}>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalEmpty}></Text>
+                  <Text style={styles.totalLabel}>Subtotal</Text>
+                  <Text style={styles.totalValue}>
+                    ${invoiceData.subtotal.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalEmpty}></Text>
+                  <Text style={styles.totalLabel}>Shipping</Text>
+                  <Text style={styles.totalValue}>
+                    ${invoiceData.shipping.toFixed(2)}
+                  </Text>
+                </View>
+                <View style={styles.totalLine}>
+                  <Text style={styles.totalEmpty}></Text>
+                  <Text style={styles.totalLabel}>Total</Text>
+                  <Text style={styles.totalValue}>
+                    ${invoiceData.total.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            </>
+          )}
+        </PageWithBackground>
+      ))}
+    </Document>
+  );
+
+  // 5. Generate the PDF blob and trigger download
+  const blob = await pdf(InvoiceDoc).toBlob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `invoice-${invoiceData.invoiceNumber}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+  }
+  
+  const renderEventContent = (eventInfo) => {
+    const job = data.find((j) => j.id == eventInfo.event.id);
+    const status = statusList.find((s) => s.value == job?.status);
+  
+    return (
+      <div
+        style={{
+          backgroundColor: status?.color == "geekblue" ? "#3788d8" : status?.color,
+          color: "black",
+          padding: "2px 6px",
+          borderRadius: "4px",
+          fontSize: "12px",
+          fontWeight: 500,
+          whiteSpace: "pre",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          cursor: "pointer",
+        }}
+        title={`${job?.sname} - ${job?.cname}`}
+      >
+        {`${job?.sname} 
+${job?.cname}`}
+      </div>
+    );
+  };
+
   return (
     <>
-      <Row style={{ display: 'block', marginBottom: 5, textAlign: 'right' }}>
-        {/* <Col span={12}>
-          <Input.Search
-            placeholder="Search by name"
-            onSearch={handleSearch}
-            enterButton
-            style={{ width: '100%' }}
-          />
-        </Col> */}
-        {/* <Col>
-          <Button color="primary" variant="text" size="large" onClick={() => showModal(null)}>
-            <FileAddOutlined style={{ fontSize: '20px' }}></FileAddOutlined>
+      <Row justify="end" style={{ marginBottom: 16 }}>
+        <Space>
+          <Button onClick={() => showModalExport()}
+              variant="text" disabled={viewMode === "table" ? false : true}>
+            <DownloadOutlined style={{ fontSize: '20px' }} />
           </Button>
-        </Col> */}
+          <Button type={viewMode === "table" ? "primary" : "default"} onClick={() => setViewMode("table")}>
+            Table View
+          </Button>
+          <Button type={viewMode === "calendar" ? "primary" : "default"} onClick={() => setViewMode("calendar")}>
+            Calendar View
+          </Button>
+        </Space>
       </Row>
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={{ pageSize: 5 }}
-        locale={{ emptyText: 'No jobs found' }}
-        scroll={{
-          x: '100%',
-        }}
-        tableLayout="auto"
-      />
+
+      {viewMode === "table" && (
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          pagination={{ pageSize: 5 }}
+          scroll={{ x: "100%" }}
+          locale={{ emptyText: "No jobs found" }}
+          tableLayout="auto"
+          onChange={(pagination, filters, sorter, extra) => {
+            setCurrentData(extra.currentDataSource);
+          }}
+          expandable={{
+            expandedRowRender: (record) => {
+              return (
+                <>
+                  <div style={{ gap: 15, display: 'flex' }}>
+                    {record.note}
+                  </div>
+                </>
+                )
+            },
+            expandedRowKeys: expandedRowKeys,
+            onExpand: (expanded, record) => {
+              if (expanded) {
+                setExpandedRowKeys([record.id])
+              } else {
+                setExpandedRowKeys([])
+              }
+            },
+            rowExpandable: (record) => record.note,
+          }}
+        />
+      )}
+
+      {viewMode === "calendar" && (
+        <Card>
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            headerToolbar={{
+              start: "today prevYear,prev,next,nextYear",
+              center: "title",  
+              end: ""
+            }}
+            eventContent={renderEventContent} 
+            events={events}
+            eventClick={(info) => {
+              const job = data.find((j) => j.id == info.event.id);
+              if (job) {
+                showModal(job);
+                //setShowModal(true);
+              }
+            }}
+            height={600}
+          />
+        </Card>
+      )}
       <DynamicFormModal
         title={serviceName}
         visible={isViewModalVisible}
@@ -828,6 +1247,91 @@ const ServiceTable = () => {
           <div style={{ textAlign: 'center', marginTop: 20 }}>
             <Button type="primary" htmlType="submit">
               Create
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+      <Modal
+        title={"Invoice info"}
+        open={isModalExportVisible}
+        style={{ top: 120, overflowY: 'auto', overflowX: 'hidden' }}
+        width={700}
+        onCancel={handleCloseModalExport}
+        footer={null}
+      >
+        <Form
+          form={formExport}
+          layout="vertical"
+          onFinish={handleExport}
+          style={{
+            marginTop: 20,
+            maxWidth: 'none',
+          }}
+          scrollToFirstError={{ behavior: 'smooth', block: 'center' }}
+        >
+          <Form.Item
+            name="name"
+            label="Name"
+            rules={[{ required: true, message: 'Please input name!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Please input email!' },
+              { type: 'email', message: 'Please input valid email!' },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="zip"
+            label="City, State and Zip code"
+            rules={[{ required: true, message: 'Please input City, State and Zip code!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="address"
+            label="Address"
+            rules={[{ required: true, message: 'Please input address!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="phone"
+            label="Phone numer"
+            rules={[
+              { required: true, message: 'Please input mobile!' },
+              {
+                pattern: /^(\+1\s?)?(\(?\d{3}\)?[\s.-]?)?\d{3}[\s.-]?\d{4}$/,
+                message: 'Please enter a valid US phone number!',
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="paymentMethod"
+            label="Payment Method"
+            rules={[{ required: true, message: 'Please choose Payment Method' }]}
+          >
+            <Select
+              showSearch
+              placeholder="Select Payment Method"
+              optionFilterProp="label"
+              options={[
+                {value: "Mastercard credit card", label: "Mastercard credit card"}, 
+                {value: "Visa credit card", label: "Visa credit card"},
+                {value: "Cash", label: "Cash"}
+              ]}
+            />
+          </Form.Item>
+          <div style={{ textAlign: 'center', marginTop: 20 }}>
+            <Button type="primary" htmlType="submit">
+              {'OK'}
             </Button>
           </div>
         </Form>

@@ -20,18 +20,24 @@ import {
   cilSettings,
   cilTask,
   cilUser,
+  cilImage,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 import { updateData, createData, deleteData, getData } from '../../api'
-import { Avatar, Button, message } from 'antd'
+import { Avatar, Button, message, Upload } from 'antd'
 import { useSelector, useDispatch } from 'react-redux'
 import { auth } from '../../authApi'
+import axios from 'axios'
+const apiUrl =
+  import.meta.env.MODE == 'product' ? import.meta.env.VITE_API_URL : import.meta.env.VITE_API_LOCAL
+const BASE_URL = `${apiUrl}/api`
 
 const AppHeaderDropdown = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const [countJob, setCountJob] = useState(0)
   const [countTask, setCountTask] = useState(0)
+  const [changeAvatarCount, setChangeAvatarCount] = useState(0)
 
   useEffect(() => {
     authenToken()
@@ -89,16 +95,60 @@ const AppHeaderDropdown = () => {
 
   useEffect(() => {
     if (role && id) {
-      const avatarPath = `./../../assets/images/avatars/${role}/${id}.jpg`
-      import(`./../../assets/images/avatars/${role}/${id}.jpg`)
-        .then((avatarModule) => {
-          setAvatar(avatarModule.default)
-        })
-        .catch((error) => {
-          setAvatar('None')
-        })
+      const fetchAvatar = async () => {
+        try {
+          const toDataURL = (blob) =>
+            new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+  
+          const avatarRes = await fetch(`${BASE_URL}/downloadAvatar`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('CRM-ctoken')}`,
+              'Content-Type': 'application/json',
+            }
+          });
+          if (!avatarRes.ok) throw new Error('Avatar fetch failed');
+  
+          const avatarBlob = await avatarRes.blob();
+          const avatarDataURL = await toDataURL(avatarBlob);
+  
+          setAvatar(avatarDataURL);
+        } catch (err) {
+          console.error('Error loading avatar:', err);
+          setAvatar('None');
+        }
+      };
+  
+      fetchAvatar();
     }
-  }, [user])
+  }, [role, id, changeAvatarCount]);
+
+  const handleFileAvatarChange = async ({ file, fileList: newFileList }) => {
+    try {
+      let fileI = newFileList.find(f => f.uid == file.uid)
+      if (fileI) {
+      const formFile = new FormData();
+      formFile.append('file', file); 
+      const response = await axios.post( BASE_URL + '/uploadAvatar', formFile, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': 'Bearer ' + localStorage.getItem('CRM-ctoken')
+        },
+      });
+      if (response.status === 200) {
+        message.success(`${file.name} uploaded successfully.`);
+        //location.reload();
+        setChangeAvatarCount(changeAvatarCount + 1);
+      }
+      }
+    } catch (error) {
+      message.error(`${file.name} upload failed.`);
+    }
+  }
 
   const Logout = async (e) => {
     e.preventDefault()
@@ -192,6 +242,22 @@ const AppHeaderDropdown = () => {
             42
           </CBadge>
         </CDropdownItem> */}
+        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Avatar</CDropdownHeader>
+        <CDropdownItem onClick={() => {
+          document.getElementsByClassName('uploadAvatar')[0].click();
+        }}>
+          <CIcon icon={cilImage} className="me-2" />
+          Upload Avatar
+          <Upload
+            beforeUpload={() => false}
+            onChange={(info) => handleFileAvatarChange(info)}
+            showUploadList={false}
+            // onPreview={(file) => handleDownloadFile(file)}
+            // disabled
+          >
+            <Button className='uploadAvatar' hidden>Upload File</Button>
+          </Upload>
+        </CDropdownItem>
         <CDropdownHeader className="bg-body-secondary fw-semibold my-2">Settings</CDropdownHeader>
         <CDropdownItem href="#/People/Profile">
           <CIcon icon={cilUser} className="me-2" />
