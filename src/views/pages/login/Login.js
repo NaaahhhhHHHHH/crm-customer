@@ -175,7 +175,7 @@ const Login = () => {
                         </Link>
                       </CCol>
                     </CRow>
-                    <CRow className="mt-3">
+                    {/* <CRow className="mt-3">
                       <CCol xs={12}>
                         <CButton
                           color="light"
@@ -191,7 +191,7 @@ const Login = () => {
                           Sign in with Google
                         </CButton>
                       </CCol>
-                    </CRow>
+                    </CRow> */}
                   </CForm>
                 </CCardBody>
               </CCard>
