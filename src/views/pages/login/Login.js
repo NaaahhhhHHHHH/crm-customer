@@ -1,7 +1,7 @@
 import React from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { login } from '../../../authApi'
+import { login, loginOauth } from '../../../authApi'
 import { toast } from 'react-hot-toast'
 import { useSelector, useDispatch } from 'react-redux'
 import {
@@ -19,7 +19,7 @@ import {
   CFormCheck,
   CImage
 } from '@coreui/react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import CIcon from '@coreui/icons-react'
 import { cilLockLocked, cilUser } from '@coreui/icons'
 import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons'
@@ -34,6 +34,15 @@ const Login = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false);
+
+  const queryString = window.location.search;
+  const searchParams = new URLSearchParams(queryString);
+
+  const client_id = searchParams.get('client_id')
+  const redirect_uri = searchParams.get('redirect_uri')
+  const state = searchParams.get('state')
+
+  const isOAuthLogin = !!client_id && !!redirect_uri
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -82,20 +91,20 @@ const Login = () => {
     e.preventDefault()
     //setErrorMessage(null) // Clear previous errors
     try {
-      // Call the login API function from api.js
-      const data = await login(username, password).then((res) => {
-        localStorage.setItem('CRM-ctoken', res.token)
+      if (isOAuthLogin) {
+        //OAuth login
+        const res = await loginOauth(username, password, client_id, redirect_uri, state);
+        toast.success('Login successful')
+        const decodedRedirectUri = decodeURIComponent(res.redirect_uri)
+        window.location.href = `${decodedRedirectUri}?code=${res.code}&state=${res.state}`
+      } else {
+        const res = await login(username, password)
+        localStorage.setItem('CRM-token', res.token)
         dispatch({ type: 'set', user: res.user })
-        // if (!res.user.verification) {
-        //   navigate('/verification')
-        // }
         toast.success('Login successful')
         navigate('/')
-      })
+      }
     } catch (error) {
-      // Handle error (e.g., wrong credentials or server error)
-      // setErrorMessage(error.message)
-      // navigate('/500')
       toast.error(error.message)
     }
   }

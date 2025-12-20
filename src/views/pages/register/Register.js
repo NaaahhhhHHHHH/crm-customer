@@ -70,7 +70,7 @@ const Register = () => {
       }
       await createData('customer', requestData)
       toast.success('Registration successful, please verify your email')
-      navigate('/login')
+      window.history.back()
     } catch (error) {
       toast.error(
         (error.response && error.response.data

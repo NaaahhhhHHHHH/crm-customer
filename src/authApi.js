@@ -38,6 +38,22 @@ export const login = async (username, password) => {
   }
 }
 
+export const loginOauth = async (username, password, client_id, redirect_uri, state) => {
+  try {
+    const response = await axios.post(`${BASE_URL}/oauth/login`, {
+      username,
+      password,
+      client_id,
+      redirect_uri,
+      state
+    })
+    return response.data
+  } catch (error) {
+    // Forward error to the calling function (can be used for handling errors)
+    throw error.response ? error.response.data : { message: 'An error occurred' }
+  }
+}
+
 export const auth = async () => {
   return await axiosInstance.get(`/auth`)
 }
