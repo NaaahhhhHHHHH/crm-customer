@@ -35,7 +35,8 @@ const Login = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false);
 
-  const queryString = window.location.search;
+  const hash = window.location.hash;
+  const queryString = hash.split('?')[1]
   const searchParams = new URLSearchParams(queryString);
 
   const client_id = searchParams.get('client_id')
