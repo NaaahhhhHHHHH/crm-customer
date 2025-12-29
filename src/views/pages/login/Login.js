@@ -100,7 +100,7 @@ const Login = () => {
         window.location.href = `${decodedRedirectUri}?code=${res.code}&state=${res.state}`
       } else {
         const res = await login(username, password)
-        localStorage.setItem('CRM-token', res.token)
+        localStorage.setItem('CRM-ctoken', res.token)
         dispatch({ type: 'set', user: res.user })
         toast.success('Login successful')
         navigate('/')
