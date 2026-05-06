@@ -19,6 +19,7 @@ import {
   Tree,
   Tag,
   Upload,
+  Grid,
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -56,6 +57,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 
 const { Step } = Steps
 const { TextArea } = Input
+const { useBreakpoint } = Grid
 
 const ServiceTable = () => {
   const [data, setData] = useState([])
@@ -89,6 +91,8 @@ const ServiceTable = () => {
   // const [step1Values, setStep1Values] = useState({})
   const [formDataArray, setFormDataArray] = useState([]) // Default one field
   const navigate = useNavigate()
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
 
   const user = useSelector((state) => state.user)
   const role = user ? user.role : ''
@@ -1130,38 +1134,99 @@ ${job?.cname}`}
       </Row>
 
       {viewMode === "table" && (
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={data}
-          pagination={{ pageSize: 5 }}
-          scroll={{ x: "100%" }}
-          locale={{ emptyText: "No jobs found" }}
-          tableLayout="auto"
-          onChange={(pagination, filters, sorter, extra) => {
-            setCurrentData(extra.currentDataSource);
-          }}
-          expandable={{
-            expandedRowRender: (record) => {
-              return (
-                <>
-                  <div style={{ gap: 15, display: 'flex' }}>
-                    {record.note}
+        isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {data.map((record) => (
+              <Card
+                key={record.id}
+                size="small"
+                title={record.sname}
+                extra={<Tag color={statusList.find((r) => r.value == record.status)?.color}>{record.status}</Tag>}
+              >
+                <div style={{ marginBottom: 8 }}>
+                  <strong>ID:</strong> {record.id}
+                </div>
+
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Budget:</strong>{' '}
+                  {record.budget.toLocaleString('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                  })}
+                </div>
+
+                <div style={{ marginBottom: 8 }}>
+                  <strong>Create Date:</strong>{' '}
+                  {dayjs(record.createdAt).format(timeFormat)}
+                </div>
+
+                {record.note && (
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Note:</strong> {record.note}
                   </div>
-                </>
-                )
-            },
-            expandedRowKeys: expandedRowKeys,
-            onExpand: (expanded, record) => {
-              if (expanded) {
-                setExpandedRowKeys([record.id])
-              } else {
-                setExpandedRowKeys([])
-              }
-            },
-            rowExpandable: (record) => record.note,
-          }}
-        />
+                )}
+
+                <Space wrap>
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => showViewModal(record)}
+                  >
+                    View form
+                  </Button>
+
+                  <Button
+                    size="small"
+                    onClick={() => showTicketModal(record)}
+                  >
+                    Inquiry
+                  </Button>
+
+                  <Button
+                    size="small"
+                    icon={<DownloadOutlined />}
+                    onClick={() => showModalExport(record)}
+                  >
+                    Export
+                  </Button>
+                </Space>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
+            pagination={{ pageSize: 5 }}
+            scroll={{ x: "max-content" }}
+            locale={{ emptyText: "No jobs found" }}
+            tableLayout="auto"
+            onChange={(pagination, filters, sorter, extra) => {
+              setCurrentData(extra.currentDataSource);
+            }}
+            expandable={{
+              expandedRowRender: (record) => {
+                return (
+                  <>
+                    <div style={{ gap: 15, display: 'flex' }}>
+                      {record.note}
+                    </div>
+                  </>
+                  )
+              },
+              expandedRowKeys: expandedRowKeys,
+              onExpand: (expanded, record) => {
+                if (expanded) {
+                  setExpandedRowKeys([record.id])
+                } else {
+                  setExpandedRowKeys([])
+                }
+              },
+              rowExpandable: (record) => record.note,
+            }}
+          />
+        )
       )}
 
       {viewMode === "calendar" && (

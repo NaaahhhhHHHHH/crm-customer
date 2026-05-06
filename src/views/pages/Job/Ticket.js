@@ -19,6 +19,7 @@ import {
   Tooltip,
   Tag,
   Upload,
+  Grid,
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -46,6 +47,7 @@ const BASE_URL = `${apiUrl}/api`
 
 const { Step } = Steps
 const { TextArea } = Input
+const { useBreakpoint } = Grid
 
 const ServiceTable = () => {
   const [data, setData] = useState([])
@@ -70,6 +72,8 @@ const ServiceTable = () => {
   // const [step1Values, setStep1Values] = useState({})
   const [formDataArray, setFormDataArray] = useState([]) // Default one field
   const navigate = useNavigate()
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
   const user = useSelector((state) => state.user)
   const role = user ? user.role : ''
   const userId = user ? user.id : 0
@@ -522,16 +526,50 @@ const ServiceTable = () => {
 
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={tableData}
-        pagination={{ pageSize: 5 }}
-        locale={{ emptyText: 'No Ticket found' }}
-        tableLayout="auto"
-        scroll={{
-          x: '100%',
-        }}
-      />
+      {isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {tableData.map((record) => (
+            <Card
+              key={record.id}
+              size="small"
+              title={record.sname}
+              extra={
+                <Tag color={statusList.find((r) => r.value == record.status)?.color}>
+                  {record.status}
+                </Tag>
+              }
+            >
+              <div style={{ marginBottom: 8 }}>
+                <strong>Job ID:</strong> {record.jid}
+              </div>
+
+              <div style={{ marginBottom: 8 }}>
+                <strong>Created Date:</strong>{' '}
+                {dayjs(record.createdAt).format(timeFormat)}
+              </div>
+
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => showModal(record)}
+              >
+                Reply
+              </Button>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={tableData}
+          pagination={{ pageSize: 5 }}
+          locale={{ emptyText: 'No Ticket found' }}
+          tableLayout="auto"
+          scroll={{
+            x: 'max-content',
+          }}
+        />
+      )}
       <Modal
         title={modalTitle}
         open={isModalVisible}

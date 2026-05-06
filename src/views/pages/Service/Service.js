@@ -15,6 +15,7 @@ import {
   Divider,
   Space,
   Card,
+  Grid,
 } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
@@ -35,6 +36,7 @@ const timeFormat = 'YYYY/MM/DD hh:mm:ss'
 
 const { Step } = Steps
 const { TextArea } = Input
+const { useBreakpoint } = Grid
 
 const ServiceTable = () => {
   const [data, setData] = useState([])
@@ -50,6 +52,8 @@ const ServiceTable = () => {
     { type: 'input', label: '', required: false, fieldname: 'field_1' },
   ]) // Default one field
   const navigate = useNavigate()
+  const screens = useBreakpoint()
+  const isMobile = !screens.md
   const user = useSelector((state) => state.user)
   const [searchText, setSearchText] = useState('')
   const [searchedColumn, setSearchedColumn] = useState('')
@@ -452,16 +456,53 @@ const ServiceTable = () => {
           </Button>
         </Col>
       </Row> */}
-      <Table
-        columns={columns}
-        dataSource={data}
-        pagination={{ pageSize: 5 }}
-        locale={{ emptyText: 'No services found' }}
-        scroll={{
-          x: '100%',
-        }}
-        tableLayout="auto"
-      />
+      {isMobile ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {data.map((record) => (
+            <Card
+              key={record.id}
+              size="small"
+              title={record.name}
+            >
+              <div style={{ marginBottom: 8 }}>
+                <strong>Price:</strong>{' '}
+                {record.price.toLocaleString('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                })}
+              </div>
+
+              <div style={{ marginBottom: 8 }}>
+                <strong>Description:</strong> {record.description}
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <strong>Create Date:</strong>{' '}
+                {dayjs(record.createdAt).format(timeFormat)}
+              </div>
+
+              <Button
+                type="primary"
+                size="small"
+                onClick={() => showViewModal(record)}
+              >
+                Use service
+              </Button>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={data}
+          pagination={{ pageSize: 5 }}
+          locale={{ emptyText: 'No services found' }}
+          scroll={{
+            x: 'max-content',
+          }}
+          tableLayout="auto"
+        />
+      )}
       <DynamicFormModal
         title={serviceName}
         visible={isViewModalVisible}

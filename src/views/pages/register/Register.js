@@ -11,22 +11,36 @@ import {
   CRow,
   CImage,
 } from '@coreui/react'
+
 import CIcon from '@coreui/icons-react'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
+
 import { toast } from 'react-hot-toast'
 import { Link, useNavigate } from 'react-router-dom'
 import PhoneInput from 'react-phone-input-2'
+
 import { updateData, createData, deleteData, getData } from '../../../api'
+import { BsEye, BsEyeSlash } from 'react-icons/bs'
+
 import 'react-phone-input-2/lib/style.css'
-import { cilLockLocked, cilUser, cilMobile, cilPhone } from '@coreui/icons'
+
+import {
+  cilLockLocked,
+  cilUser,
+  cilMobile,
+  cilPhone
+} from '@coreui/icons'
 
 const apiUrl =
   import.meta.env.MODE === 'product'
     ? import.meta.env.VITE_API_URL
     : import.meta.env.VITE_API_LOCAL
+
 const BASE_URL = `${apiUrl}/api`
 
 const Register = () => {
   const navigate = useNavigate()
+
   const [username, setUsername] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -35,10 +49,19 @@ const Register = () => {
   const [mobile, setMobile] = useState('')
   const [work, setWork] = useState('')
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false)
+
   const validatePhoneNumber = (phone) => {
-    // Basic validation: at least 10 digits (you can customize)
-    const digitsOnly = phone.replace(/\D/g, '')
-    return digitsOnly.length >= 10
+    try {
+      const phoneNumber = parsePhoneNumberFromString('+' + phone)
+      if (!phoneNumber || !phoneNumber.isValid()) {
+        return false
+      }
+      return true
+    } catch {
+      return false
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -54,7 +77,7 @@ const Register = () => {
       return
     }
 
-    if (work && !validatePhoneNumber(work)) {
+    if (!validatePhoneNumber(work)) {
       toast.error('Work phone is invalid')
       return
     }
@@ -68,8 +91,13 @@ const Register = () => {
         mobile,
         work,
       }
+
       await createData('customer', requestData)
+
       toast.success('Registration successful, please verify your email')
+
+      await createData('sendEmailConFirm', requestData)
+
       window.history.back()
     } catch (error) {
       toast.error(
@@ -85,6 +113,7 @@ const Register = () => {
       <div style={{ position: 'absolute' }}>
         <CImage src={BASE_URL + '/downloadLogo'} alt="Logo" height={50} />
       </div>
+
       <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
         <CContainer>
           <CRow className="justify-content-center">
@@ -93,12 +122,17 @@ const Register = () => {
                 <CCardBody className="p-4">
                   <CForm onSubmit={handleSubmit}>
                     <h1>Register</h1>
-                    <p className="text-body-secondary">Create your account</p>
 
+                    <p className="text-body-secondary">
+                      Create your account
+                    </p>
+
+                    {/* Full Name */}
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
                         <CIcon icon={cilUser} />
                       </CInputGroupText>
+
                       <input
                         required
                         type="text"
@@ -110,8 +144,10 @@ const Register = () => {
                       />
                     </CInputGroup>
 
+                    {/* Email */}
                     <CInputGroup className="mb-3">
                       <CInputGroupText>@</CInputGroupText>
+
                       <input
                         required
                         type="email"
@@ -123,19 +159,32 @@ const Register = () => {
                       />
                     </CInputGroup>
 
-                    <CInputGroup className="mb-3" style={{ alignItems: 'center' }}>
+                    {/* Mobile */}
+                    <CInputGroup
+                      className="mb-3"
+                      style={{ alignItems: 'center' }}
+                    >
                       <CInputGroupText>
                         <CIcon icon={cilMobile} />
                       </CInputGroupText>
+
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <PhoneInput
                           country={'us'}
                           enableSearch
                           value={mobile}
                           onChange={setMobile}
-                          inputStyle={{ width: '100%', height: '100%' }}
-                          containerStyle={{ width: '100%', height: '100%' }}
-                          buttonStyle={{ border: 'none' }}
+                          inputStyle={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                          containerStyle={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                          buttonStyle={{
+                            border: 'none',
+                          }}
                           inputProps={{
                             name: 'mobile',
                             required: true,
@@ -145,31 +194,47 @@ const Register = () => {
                       </div>
                     </CInputGroup>
 
-                    <CInputGroup className="mb-3" style={{ alignItems: 'center' }}>
+                    {/* Work Phone */}
+                    <CInputGroup
+                      className="mb-3"
+                      style={{ alignItems: 'center' }}
+                    >
                       <CInputGroupText>
                         <CIcon icon={cilPhone} />
                       </CInputGroupText>
+
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <PhoneInput
                           country={'us'}
                           enableSearch
                           value={work}
                           onChange={setWork}
-                          inputStyle={{ width: '100%', height: '100%' }}
-                          containerStyle={{ width: '100%', height: '100%' }}
-                          buttonStyle={{ border: 'none' }}
+                          inputStyle={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                          containerStyle={{
+                            width: '100%',
+                            height: '100%',
+                          }}
+                          buttonStyle={{
+                            border: 'none',
+                          }}
                           inputProps={{
                             name: 'work',
+                            required: true,
                             autoComplete: 'tel',
                           }}
                         />
                       </div>
                     </CInputGroup>
 
+                    {/* Username */}
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
                         <CIcon icon={cilUser} />
                       </CInputGroupText>
+
                       <input
                         required
                         type="text"
@@ -182,13 +247,15 @@ const Register = () => {
                       />
                     </CInputGroup>
 
+                    {/* Password */}
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
                         <CIcon icon={cilLockLocked} />
                       </CInputGroupText>
+
                       <input
                         required
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -198,20 +265,48 @@ const Register = () => {
                         autoComplete="new-password"
                         className="form-control"
                       />
+
+                      <CInputGroupText
+                        style={{ cursor: 'pointer' }}
+                        onClick={() =>
+                          setShowPassword(!showPassword)
+                        }
+                      >
+                        {showPassword ? <BsEyeSlash /> : <BsEye />}
+                      </CInputGroupText>
                     </CInputGroup>
 
+                    {/* Repeat Password */}
                     <CInputGroup className="mb-4">
                       <CInputGroupText>
                         <CIcon icon={cilLockLocked} />
                       </CInputGroupText>
+
                       <input
                         required
-                        type="password"
+                        type={
+                          showRepeatPassword
+                            ? 'text'
+                            : 'password'
+                        }
                         placeholder="Repeat password"
                         value={repeatPassword}
-                        onChange={(e) => setRepeatPassword(e.target.value)}
+                        onChange={(e) =>
+                          setRepeatPassword(e.target.value)
+                        }
                         className="form-control"
                       />
+
+                      <CInputGroupText
+                        style={{ cursor: 'pointer' }}
+                        onClick={() =>
+                          setShowRepeatPassword(
+                            !showRepeatPassword,
+                          )
+                        }
+                      >
+                        {showRepeatPassword ? <BsEyeSlash /> : <BsEye />}
+                      </CInputGroupText>
                     </CInputGroup>
 
                     <CRow>
@@ -220,9 +315,13 @@ const Register = () => {
                           Create Account
                         </CButton>
                       </CCol>
+
                       <CCol xs={6}>
                         <Link to="/login">
-                          <CButton color="link" className="px-0">
+                          <CButton
+                            color="link"
+                            className="px-0"
+                          >
                             Already have account, Sign in
                           </CButton>
                         </Link>
